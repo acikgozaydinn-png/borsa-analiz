@@ -26,8 +26,11 @@ try:
     st.plotly_chart(fig, use_container_width=True)
 
     # Şirket Bilgisi
-    st.subheader("🏢 Şirket Özeti")
-    st.write(info.get('longBusinessSummary', "Bilgi bulunamadı."))
+    st.write("""
+### NVIDIA Şirket Özeti
+NVIDIA, yapay zeka (AI) altyapısı ve grafik işlemcileri konusunda dünya lideri bir teknoloji şirketidir. 
+Şirket; oyun dünyası için GeForce GPU'lar, veri merkezleri için yüksek performanslı çipler ve 
+otonom araçlar için yapay zeka çözümleri üretmektedir. 1993 yılında kurulan NVIDIA'nın merkezi 
+Kaliforniya, Santa Clara'da bulunmaktadır.
+""")
 
-except Exception as e:
-    st.error("Veri çekilemedi, lütfen sembolü kontrol edin.")

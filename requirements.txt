@@ -2,8 +2,3 @@ streamlit
 yfinance
 pandas_ta
 plotly
-pandas
-numpy
-requests
-deep-translator
-ta

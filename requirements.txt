@@ -1,3 +1,8 @@
 streamlit
 yfinance
-googletrans==3.1.0a0
+pandas-ta
+plotly
+pandas
+numpy
+requests
+googletrans==4.0.0rc1

@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import requests
 import os
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 
 # Anthropic API Key (Streamlit Cloud → Settings → Secrets'tan okunur)
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -16,7 +16,7 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 # 1. SAYFA AYARLARI
 # ─────────────────────────────────────────
 st.set_page_config(page_title="Gelişmiş Borsa Analizi", layout="wide")
-translator = Translator()
+
 
 st.title("📈 Yapay Zeka Destekli Borsa Analiz Aracı")
 st.write("Hisse sembolünü yazın (Örn: THYAO.IS, AAPL, BTC-USD) ve analizi izleyin.")
@@ -83,7 +83,8 @@ def claude_turkce_ozet(metin: str, tur: str = "profil") -> str:
 
 def cevir(metin: str) -> str:
     try:
-        return translator.translate(metin, dest='tr').text
+    try:
+        return GoogleTranslator(source='auto', target='tr').translate(metin)
     except:
         return metin
 

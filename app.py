@@ -1,4 +1,8 @@
-# ... (Kütüphane ithalleri aynı kalacak)
+import streamlit as st
+import yfinance as yf  # Bu satır eksik olduğu için hata alıyorsun
+from googletrans import Translator
+
+ı# ... (Kütüphane ithalleri aynı kalacak)
 
 try:
     stock = yf.Ticker(ticker)

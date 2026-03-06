@@ -8,20 +8,9 @@ st.set_page_config(page_title="Aydın Yatırım Noktası", layout="wide")
 st.title("📈 Nasdaq Teknoloji Analiz Portalı")
 st.write("Sistem Canlıda: www.aydinyatirimnoktasi.com")
 
-
 # Yan Menü
 ticker = st.sidebar.text_input("Hisse Kodu (Örn: NVDA, AAPL)", "NVDA").upper()
 sorgula_butonu = st.sidebar.button("Analiz Et")
-
-# Şirket Bilgisi Kısmı (Aşağıda bir yerde olmalı)
-st.write(f"### {ticker} Şirket Özeti")
-st.info("""
-NVIDIA, yapay zeka (AI) altyapısı ve grafik işlemcileri konusunda dünya lideri bir teknoloji şirketidir. 
-Şirket; oyun dünyası için GeForce GPU'lar, veri merkezleri için yüksek performanslı çipler ve 
-otonom araçlar için yapay zeka çözümleri üretmektedir.
-""")
-
-.sidebar.text_input("Hisse Kodu (Örn: NVDA, AAPL)", "NVDA").upper()
 
 try:
     stock = yf.Ticker(ticker)
@@ -30,19 +19,28 @@ try:
 
     # Özet Veriler
     c1, c2 = st.columns(2)
-    c1.metric("Güncel Fiyat", f"${info.get('currentPrice', 'N/A')}")
-    c2.metric("Piyasa Değeri", f"{info.get('marketCap', 'N/A'):,}")
+    current_price = info.get('regularMarketPrice') or info.get('currentPrice') or 0
+    market_cap = info.get('marketCap', 0)
+    
+    c1.metric("Güncel Fiyat", f"${current_price:,.2f}")
+    c2.metric("Piyasa Değeri", f"${market_cap:,.0f}")
 
     # Grafik
-    fig = go.Figure(data=[go.Candlestick(x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'])])
+    fig = go.Figure(data=[go.Candlestick(x=df.index,
+                open=df['Open'], high=df['High'],
+                low=df['Low'], close=df['Close'])])
     st.plotly_chart(fig, use_container_width=True)
 
     # Şirket Bilgisi
-    st.write("""
-### NVIDIA Şirket Özeti
-NVIDIA, yapay zeka (AI) altyapısı ve grafik işlemcileri konusunda dünya lideri bir teknoloji şirketidir. 
-Şirket; oyun dünyası için GeForce GPU'lar, veri merkezleri için yüksek performanslı çipler ve 
-otonom araçlar için yapay zeka çözümleri üretmektedir. 1993 yılında kurulan NVIDIA'nın merkezi 
-Kaliforniya, Santa Clara'da bulunmaktadır.
-""")
+    st.write(f"### {ticker} Şirket Özeti")
+    if ticker == "NVDA":
+        st.info("""
+        NVIDIA, yapay zeka (AI) altyapısı ve grafik işlemcileri konusunda dünya lideridir. 
+        Oyun dünyası için GeForce GPU'lar, veri merkezleri için yüksek performanslı çipler 
+        ve otonom araçlar için çözümler üretmektedir. Merkezi Santa Clara'dadır.
+        """)
+    else:
+        st.write(info.get('longBusinessSummary', 'Bilgi bulunamadı.'))
 
+except Exception as e:
+    st.error(f"Bir hata oluştu: {e}")

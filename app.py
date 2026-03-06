@@ -8,8 +8,20 @@ st.set_page_config(page_title="Aydın Yatırım Noktası", layout="wide")
 st.title("📈 Nasdaq Teknoloji Analiz Portalı")
 st.write("Sistem Canlıda: www.aydinyatirimnoktasi.com")
 
+
 # Yan Menü
 ticker = st.sidebar.text_input("Hisse Kodu (Örn: NVDA, AAPL)", "NVDA").upper()
+sorgula_butonu = st.sidebar.button("Analiz Et")
+
+# Şirket Bilgisi Kısmı (Aşağıda bir yerde olmalı)
+st.write(f"### {ticker} Şirket Özeti")
+st.info("""
+NVIDIA, yapay zeka (AI) altyapısı ve grafik işlemcileri konusunda dünya lideri bir teknoloji şirketidir. 
+Şirket; oyun dünyası için GeForce GPU'lar, veri merkezleri için yüksek performanslı çipler ve 
+otonom araçlar için yapay zeka çözümleri üretmektedir.
+""")
+
+.sidebar.text_input("Hisse Kodu (Örn: NVDA, AAPL)", "NVDA").upper()
 
 try:
     stock = yf.Ticker(ticker)

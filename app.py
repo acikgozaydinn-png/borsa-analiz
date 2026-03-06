@@ -2,26 +2,26 @@ import streamlit as st
 import yfinance as yf
 from deep_translator import GoogleTranslator
 
-# Sayfa Genişliği
+# Tasarım Ayarları
 st.set_page_config(page_title="Borsa Analiz Terminali", layout="wide")
 
 def tr_cevir(metin):
     if not metin or metin == "N/A": return "Bilgi Yok"
     try:
-        # deep-translator kütüphanesini kullanarak çeviri yapar
         return GoogleTranslator(source='en', target='tr').translate(metin[:1500])
     except:
         return metin
 
 st.title("🏛️ Kurumsal Şirket Analiz Terminali")
 
-ticker = st.text_input("Hisse Sembolü (Örn: THYAO.IS, FROTO.IS, AAPL):", "THYAO.IS").upper()
+ticker = st.text_input("Hisse Sembolü (Örn: THYAO.IS, AAPL):", "THYAO.IS").upper()
 
 if ticker:
     try:
         hisse = yf.Ticker(ticker)
-        info = hisse.info 
+        # Verileri daha güvenli çekmek için 'fast_info' ve 'history' kullanıyoruz
         df = hisse.history(period="1y")
+        info = hisse.info
 
         if not df.empty:
             para = "₺" if ticker.endswith(".IS") else "$"
@@ -32,33 +32,35 @@ if ticker:
             c2.metric("Piyasa Değeri", f"{info.get('marketCap', 0):,}")
             c3.metric("Sektör", tr_cevir(info.get('sector', 'N/A')))
 
-            # GRAFİK
-            st.area_chart(df['Close'])
+            # GRAFİK (Daha belirgin hale getirildi)
+            st.subheader("📈 1 Yıllık Fiyat Hareketi")
+            st.line_chart(df['Close'], use_container_width=True)
 
+            # TÜRKÇE İŞ BİLGİLERİ
             st.divider()
-            
-            # TÜRKÇE DETAYLAR
-            col_sol, col_sag = st.columns([2, 1])
-            with col_sol:
-                st.subheader("📄 İş Özeti")
-                st.info(tr_cevir(info.get('longBusinessSummary', '')))
-            with col_sag:
-                st.subheader("💰 Kurumsal Varlıklar")
-                st.write(f"**Endüstri:** {tr_cevir(info.get('industry', 'N/A'))}")
-                st.write(f"**Çalışan:** {info.get('fullTimeEmployees', 'N/A')}")
-                st.write(f"**Merkez:** {tr_cevir(info.get('city', 'N/A'))}")
+            st.subheader("📄 Şirket Hakkında Detaylı Bilgi")
+            with st.expander("İş Özetini Okumak İçin Tıklayın", expanded=True):
+                st.info(tr_cevir(info.get('longBusinessSummary', 'Bilgi çekilemedi.')))
 
-            # HABERLER
+            # HABERLER VE ANLAŞMALAR (Hata vermeyen yeni yapı)
             st.divider()
-            st.subheader("🗞️ Son Haberler")
-            for haber in hisse.news[:3]:
-                st.write(f"🔹 **{tr_cevir(haber['title'])}**")
-                st.caption(f"[Kaynağa Git]({haber['link']})")
+            st.subheader("🗞️ Son Haberler ve Gelişmeler")
+            try:
+                haberler = hisse.news
+                if haberler:
+                    for haber in haberler[:5]:
+                        # Başlık verisini farklı yerlerden kontrol ederek çekiyoruz
+                        baslik = haber.get('title', 'Başlık bulunamadı')
+                        link = haber.get('link', '#')
+                        st.write(f"🔹 **{tr_cevir(baslik)}**")
+                        st.caption(f"[Habere Git]({link})")
+                else:
+                    st.write("Güncel haber bulunamadı.")
+            except:
+                st.write("Haberler şu an yüklenemiyor.")
+
         else:
-            st.error("Hisse bulunamadı.")
-            
+            st.error("Veri alınamadı. Sembolü kontrol edip 5 dk bekleyin.")
+
     except Exception as e:
-        if "Too Many Requests" in str(e):
-            st.warning("⚠️ Yahoo Finance limiti doldu. Lütfen 15 dakika bekleyin.")
-        else:
-            st.error(f"Hata: {e}")
+        st.warning("⚠️ Veri sağlayıcı şu an yoğun. Lütfen sayfayı yenilemeden 10-15 dk bekleyin.")

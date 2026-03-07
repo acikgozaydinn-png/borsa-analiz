@@ -59,13 +59,26 @@ girdi = st.text_input(
 ).upper()
 sembol_listesi = [s.strip() for s in girdi.split(",") if s.strip()]
 
-period_map = {"1G": "1d", "5G": "5d", "1A": "1mo", "1Y": "1y", "YBK": "max"}
-sure = st.select_slider("Zaman Aralığı:", options=list(period_map.keys()), value="1A")
+period_map = {"1 Ay": "1mo", "1 Yıl": "1y", "3 Yıl": "3y", "5 Yıl": "5y", "Tümü": "max"}
+
+st.markdown("**📅 Zaman Aralığı:**")
+btn_cols = st.columns(len(period_map))
+if "sure_secim" not in st.session_state:
+    st.session_state.sure_secim = "1 Ay"
+
+for i, etiket in enumerate(period_map.keys()):
+    with btn_cols[i]:
+        secili = st.session_state.sure_secim == etiket
+        if st.button(etiket, key=f"btn_{etiket}", type="primary" if secili else "secondary", use_container_width=True):
+            st.session_state.sure_secim = etiket
+
+sure = st.session_state.sure_secim
 
 if sembol_listesi:
     # FIX: list → tuple (cache uyumluluğu)
     with st.spinner("Veriler yükleniyor..."):
         tum_paket = veri_hazirla(tuple(sembol_listesi), period_map[sure])
+
 
     if tum_paket:
         # --- METRİKLER ---

@@ -48,7 +48,7 @@ def tr_cevir(metin):
         return metin  # FIX: hata olursa çökmek yerine orijinal metni döner
 
 
-st.title("🏛️ Yatırım Noktası | Stratejik Analiz Terminali")
+st.markdown("#### 🏛️ Yatırım Noktası | Analiz Terminali")
 st.caption("Veriler Yahoo Finance üzerinden çekilmektedir. Yatırım tavsiyesi değildir.")
 
 # --- ÜST PANEL ---
@@ -188,4 +188,5 @@ if sembol_listesi:
                         st.info("Haber yüklenemedi.")
     else:
         st.error("❌ Sembolleri kontrol edin; veri çekilemedi.")
-                
+
+        

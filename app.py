@@ -1,96 +1,143 @@
 import streamlit as st
 import yfinance as yf
-from deep_translator import GoogleTranslator
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+
+try:
+    from deep_translator import GoogleTranslator
+    CEVIRI_AKTIF = True
+except ImportError:
+    CEVIRI_AKTIF = False
 
 # Sayfa Ayarları
 st.set_page_config(page_title="Yatırım Noktası - Pro Analiz", layout="wide")
 
+
 @st.cache_data(ttl=600)
 def veri_hazirla(semboller, sure):
+    # FIX: list → tuple (Streamlit cache için hashable olmalı)
     paket = {}
     for s in semboller:
+        s = s.strip().upper()
+        if not s:
+            continue
         try:
-            t = yf.Ticker(s.strip().upper())
+            t = yf.Ticker(s)
             hist = t.history(period=sure)
             if not hist.empty:
-                paket[s.strip().upper()] = {"df": hist, "info": t.info, "news": t.get_news()}
-        except: continue
+                # FIX: t.get_news() → t.news (yeni yfinance API)
+                try:
+                    haberler = t.news
+                except Exception:
+                    haberler = []
+                paket[s] = {"df": hist, "info": t.info, "news": haberler}
+        except Exception as e:
+            st.warning(f"⚠️ {s} verisi çekilemedi.")
+            continue
     return paket
+
 
 @st.cache_data(ttl=3600)
 def tr_cevir(metin):
-    if not metin or metin == "N/A": return "Bilgi mevcut değil."
-    try: return GoogleTranslator(source='en', target='tr').translate(metin[:1200])
-    except: return metin
+    if not metin or metin == "N/A":
+        return "Bilgi mevcut değil."
+    if not CEVIRI_AKTIF:
+        return metin
+    try:
+        return GoogleTranslator(source='en', target='tr').translate(metin[:1000])
+    except Exception:
+        return metin  # FIX: hata olursa çökmek yerine orijinal metni döner
+
 
 st.title("🏛️ Yatırım Noktası | Stratejik Analiz Terminali")
+st.caption("Veriler Yahoo Finance üzerinden çekilmektedir. Yatırım tavsiyesi değildir.")
 
-# --- ÜST PANEL: ÇOKLU GİRİŞ VE AYARLAR ---
-c1, c2, c3 = st.columns([2.5, 0.8, 0.7])
-# SİZİN İSTEDİĞİNİZ: Çoklu Kıyaslama (Virgül ile ayırın)
-girdi = c1.text_input("📊 Hisseleri Kıyaslayın (Örn: AAPL, TSLA, NVDA, THYAO.IS):", "AAPL, NVDA").upper()
-sembol_listesi = [s.strip() for s in girdi.split(",")]
+# --- ÜST PANEL ---
+st.markdown("### 🔍 Hisseleri Kıyaslayın")
+girdi = st.text_input(
+    "Sembolleri virgül ile ayırın (Örn: AAPL, NVDA, TSLA, THYAO.IS):",
+    "AAPL, NVDA"
+).upper()
+sembol_listesi = [s.strip() for s in girdi.split(",") if s.strip()]
 
-grafik_tipi = c2.selectbox("Grafik Türü:", ["Çizgi (Kıyaslamalı)", "Mum Grafik (Tekli)"])
 period_map = {"1G": "1d", "5G": "5d", "1A": "1mo", "1Y": "1y", "YBK": "max"}
-sure = c3.selectbox("Zaman Aralığı:", list(period_map.keys()), index=2)
+sure = st.select_slider("Zaman Aralığı:", options=list(period_map.keys()), value="1A")
 
 if sembol_listesi:
-    tum_paket = veri_hazirla(sembol_listesi, period_map[sure])
-    
+    # FIX: list → tuple (cache uyumluluğu)
+    with st.spinner("Veriler yükleniyor..."):
+        tum_paket = veri_hazirla(tuple(sembol_listesi), period_map[sure])
+
     if tum_paket:
-        # --- ÜST METRİKLER ---
+        # --- METRİKLER ---
         metrik_cols = st.columns(len(tum_paket))
         for i, (s, veri) in enumerate(tum_paket.items()):
             df = veri['df']
+            # FIX: sıfıra bölme koruması eklendi
+            if df.empty or len(df) < 1:
+                continue
             fiyat = df['Close'].iloc[-1]
-            perf = ((df['Close'].iloc[-1] / df['Close'].iloc[0]) - 1) * 100
+            baslangic = df['Close'].iloc[0]
+            perf = ((fiyat / baslangic) - 1) * 100 if baslangic > 0 else 0
             para = "₺" if s.endswith(".IS") else "$"
             with metrik_cols[i]:
                 st.metric(s, f"{fiyat:,.2f} {para}", f"{perf:.2f}%")
 
-        # --- PROFESYONEL GRAFİK MODÜLÜ ---
+        # --- KIYASLAMA GRAFİĞİ ---
         fig = go.Figure()
-        
-        if grafik_tipi == "Mum Grafik (Tekli)":
-            # Tekli odaklanma (Listenin ilk hissesi)
-            ilk_s = sembol_listesi[0]
-            df = tum_paket[ilk_s]['df']
-            fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.03, row_width=[0.2, 0.8])
-            fig.add_trace(go.Candlestick(x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], name=ilk_s), row=1, col=1)
-            fig.add_trace(go.Bar(x=df.index, y=df['Volume'], name="Hacim", marker_color='silver'), row=2, col=1)
-            fig.update_layout(xaxis_rangeslider_visible=False)
-        else:
-            # Çoklu Kıyaslama (Yüzdesel)
-            for s, veri in tum_paket.items():
-                df = veri['df']
-                yuzde_perf = (df['Close'] / df['Close'].iloc[0] - 1) * 100
-                fig.add_trace(go.Scatter(x=df.index, y=yuzde_perf, name=f"{s} (%)", line=dict(width=2.5)))
+        for s, veri in tum_paket.items():
+            df = veri['df']
+            if df.empty or len(df) < 2:
+                continue
+            baslangic_fiyat = df['Close'].iloc[0]
+            if baslangic_fiyat == 0:
+                continue
+            yuzde_perf = (df['Close'] / baslangic_fiyat - 1) * 100
+            fig.add_trace(go.Scatter(
+                x=df.index,
+                y=yuzde_perf,
+                name=f"{s} (%)",
+                mode='lines',
+                line=dict(width=2.5)
+            ))
 
-        fig.update_layout(hovermode="x unified", height=550, template="plotly_white", yaxes=dict(side="right", ticksuffix="%" if grafik_tipi != "Mum Grafik (Tekli)" else ""))
-        st.plotly_chart(fig, use_container_width=True, config={'scrollZoom': True})
+        fig.update_layout(
+            hovermode="x unified",
+            height=500,
+            template="plotly_white",
+            yaxis=dict(side="right", ticksuffix="%", title="Getiri (%)", gridcolor="#f1f3f4"),
+            xaxis=dict(showgrid=False),
+            margin=dict(l=20, r=20, t=30, b=20)
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
-        # --- ŞİRKET BİLGİLERİ VE HABERLER (İlk Hisse Odaklı) ---
+        # --- ŞİRKET DETAYLARI ---
         st.divider()
-        ana_s = sembol_listesi[0]
-        info = tum_paket[ana_s]['info']
-        news = tum_paket[ana_s]['news']
-        
-        col_bilgi, col_haber = st.columns([1.5, 1])
-        with col_bilgi:
-            st.subheader(f"🏢 {ana_s} Şirket Künyesi")
-            # Piyasa Değeri Formatı: 3.039,55 $
+        ana_hisse = list(tum_paket.keys())[0]
+        info = tum_paket[ana_hisse]['info']
+        news = tum_paket[ana_hisse]['news']
+
+        c_bilgi, c_haber = st.columns([1.5, 1])
+        with c_bilgi:
+            st.subheader(f"🏢 {ana_hisse} Şirket Profili")
             raw_cap = info.get('marketCap', 0)
-            formatted_cap = f"{raw_cap/1e9:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-            st.write(f"**Piyasa Değeri:** {formatted_cap} Milyar | **F/K:** {info.get('trailingPE', 'N/A')}")
-            st.write(tr_cevir(info.get('longBusinessSummary')))
-            
-        with col_haber:
-            st.subheader("🗞️ Haber Akışı")
+            para = "₺" if ana_hisse.endswith(".IS") else "$"
+            # FIX: hatalı .replace() zinciri kaldırıldı
+            formatted_cap = f"{raw_cap / 1e9:,.2f} Milyar {para}" if raw_cap else "N/A"
+            fk = info.get('trailingPE', 'N/A')
+            fk_str = f"{fk:.2f}" if isinstance(fk, float) else str(fk)
+            st.markdown(f"**Piyasa Değeri:** {formatted_cap} | **F/K:** {fk_str}")
+            st.write(tr_cevir(info.get('longBusinessSummary', '')))
+
+        with c_haber:
+            st.subheader("🗞️ Güncel Haberler")
             if news:
                 for n in news[:5]:
-                    st.markdown(f"🔗 **[{tr_cevir(n.get('title'))}]({n.get('link')})**")
+                    # FIX: yeni yfinance haber yapısına göre güvenli erişim
+                    baslik = n.get('title', 'Başlık yok')
+                    link = n.get('link') or n.get('url', '#')
+                    st.markdown(f"🔗 **[{tr_cevir(baslik)}]({link})**")
                     st.write("---")
-            else: st.info("Haberler şu an yüklenemiyor.")
+            else:
+                st.info("Haberler şu an yüklenemiyor.")
+    else:
+        st.error("❌ Sembolleri kontrol edin; veri çekilemedi.")

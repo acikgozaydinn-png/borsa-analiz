@@ -89,7 +89,12 @@ if sembol_listesi:
             if df.empty or len(df) < 1:
                 continue
             fiyat = df['Close'].iloc[-1]
-            baslangic = df['Close'].iloc[0]
+            # 1G seçilince önceki kapanışa göre kıyasla (previousClose), diğerlerinde dönem başı
+            if sure == "1G" and len(df) < 2:
+                prev_close = veri['info'].get('previousClose', df['Close'].iloc[0])
+                baslangic = prev_close if prev_close else df['Close'].iloc[0]
+            else:
+                baslangic = df['Close'].iloc[0]
             perf = ((fiyat / baslangic) - 1) * 100 if baslangic > 0 else 0
             para = "₺" if s.endswith(".IS") else "$"
             with metrik_cols[i]:

@@ -123,34 +123,63 @@ if sembol_listesi:
         )
         st.plotly_chart(fig, use_container_width=True)
 
-        # --- ŞİRKET DETAYLARI ---
+        # --- ŞİRKET DETAYLARI (TÜM HİSSELER) ---
         st.divider()
-        ana_hisse = list(tum_paket.keys())[0]
-        info = tum_paket[ana_hisse]['info']
-        news = tum_paket[ana_hisse]['news']
+        st.markdown("### 🏢 Şirket Profilleri")
 
-        c_bilgi, c_haber = st.columns([1.5, 1])
-        with c_bilgi:
-            st.subheader(f"🏢 {ana_hisse} Şirket Profili")
+        sirket_cols = st.columns(len(tum_paket))
+        for i, (s, veri) in enumerate(tum_paket.items()):
+            info = veri['info']
+            para = "₺" if s.endswith(".IS") else "$"
+
             raw_cap = info.get('marketCap', 0)
-            para = "₺" if ana_hisse.endswith(".IS") else "$"
-            # FIX: hatalı .replace() zinciri kaldırıldı
             formatted_cap = f"{raw_cap / 1e9:,.2f} Milyar {para}" if raw_cap else "N/A"
+
             fk = info.get('trailingPE', 'N/A')
             fk_str = f"{fk:.2f}" if isinstance(fk, float) else str(fk)
-            st.markdown(f"**Piyasa Değeri:** {formatted_cap} | **F/K:** {fk_str}")
-            st.write(tr_cevir(info.get('longBusinessSummary', '')))
 
-        with c_haber:
-            st.subheader("🗞️ Güncel Haberler")
-            if news:
-                for n in news[:5]:
-                    # FIX: yeni yfinance haber yapısına göre güvenli erişim
-                    baslik = n.get('title', 'Başlık yok')
-                    link = n.get('link') or n.get('url', '#')
-                    st.markdown(f"🔗 **[{tr_cevir(baslik)}]({link})**")
-                    st.write("---")
-            else:
-                st.info("Haberler şu an yüklenemiyor.")
+            calisan = info.get('fullTimeEmployees', None)
+            calisan_str = f"{calisan:,}" if calisan else "N/A"
+
+            sektor = info.get('sector', 'N/A')
+            sektor_tr = tr_cevir(sektor) if sektor != 'N/A' else 'N/A'
+
+            ulke = info.get('country', 'N/A')
+            sirket_adi = info.get('longName', s)
+
+            ozet = tr_cevir(info.get('longBusinessSummary', ''))
+
+            with sirket_cols[i]:
+                st.subheader(f"{s}")
+                st.caption(sirket_adi)
+                st.markdown(f"""
+| 📌 | Bilgi |
+|---|---|
+| 🏦 Piyasa Değeri | {formatted_cap} |
+| 📊 F/K Oranı | {fk_str} |
+| 👥 Çalışan Sayısı | {calisan_str} |
+| 🏭 Sektör | {sektor_tr} |
+| 🌍 Ülke | {ulke} |
+""")
+                with st.expander("📄 Şirket Hakkında"):
+                    st.write(ozet)
+
+        # --- HABERLER (TÜM HİSSELER) ---
+        st.divider()
+        st.markdown("### 🗞️ Güncel Haberler")
+
+        haber_cols = st.columns(len(tum_paket))
+        for i, (s, veri) in enumerate(tum_paket.items()):
+            news = veri['news']
+            with haber_cols[i]:
+                st.markdown(f"**{s}**")
+                if news:
+                    for n in news[:5]:
+                        baslik = n.get('title', 'Başlık yok')
+                        link = n.get('link') or n.get('url', '#')
+                        st.markdown(f"🔗 [{tr_cevir(baslik)}]({link})")
+                        st.write("---")
+                else:
+                    st.info("Haber yüklenemedi.")
     else:
         st.error("❌ Sembolleri kontrol edin; veri çekilemedi.")

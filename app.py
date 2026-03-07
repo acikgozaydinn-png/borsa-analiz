@@ -1,10 +1,10 @@
- import streamlit as st
+import streamlit as st
 import yfinance as yf
 from deep_translator import GoogleTranslator
 import plotly.graph_objects as go
 
 # Sayfa Ayarları
-st.set_page_config(page_title="Yatırım Noktası - Terminal", layout="wide")
+st.set_page_config(page_title="Yatırım Noktası - Analiz Terminali", layout="wide")
 
 @st.cache_data(ttl=3600)
 def tr_cevir(metin):
@@ -30,6 +30,7 @@ if ticker:
             kiyas_ticker = st.text_input("Kıyaslanacak Sembol (Örn: QQQ, TUPRS.IS):", "").upper()
             
             fig = go.Figure()
+            # Performans (%) - Google Finans Tarzı
             ana_perf = (df['Close'] / df['Close'].iloc[0] - 1) * 100
             fig.add_trace(go.Scatter(x=df.index, y=ana_perf, name=f"{ticker} (%)", line=dict(color='#1A73E8', width=2.5)))
 
@@ -40,9 +41,9 @@ if ticker:
                     fig.add_trace(go.Scatter(x=k_df.index, y=k_perf, name=f"{kiyas_ticker} (%)", line=dict(color='#F9AB00', width=2.5)))
 
             fig.update_layout(
-                hovermode="x unified", plot_bgcolor="white", paper_bgcolor="white", height=400,
+                hovermode="x unified", plot_bgcolor="white", paper_bgcolor="white", height=450,
                 margin=dict(l=0, r=0, t=10, b=0),
-                yaxis=dict(side="right", ticksuffix="%", gridcolor="#f1f3f4")
+                yaxis=dict(side="right", ticksuffix="%", gridcolor="#f1f3f4", tickfont=dict(color="#70757a"))
             )
             st.plotly_chart(fig, use_container_width=True)
 
@@ -62,4 +63,4 @@ if ticker:
                 else:
                     st.warning("Haber akışı şu an yüklenemiyor.")
     except Exception as e:
-        st.error(f"Hata: {e}")
+        st.error(f"Teknik Hata: {e}")

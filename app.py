@@ -59,7 +59,7 @@ girdi = st.text_input(
 ).upper()
 sembol_listesi = [s.strip() for s in girdi.split(",") if s.strip()]
 
-period_map = {"1 Ay": "1mo", "1 Yıl": "1y", "3 Yıl": "3y", "5 Yıl": "5y", "Tümü": "max"}
+period_map = {"1G": "1d", "1H": "5d", "1 Ay": "1mo", "1 Yıl": "1y", "3 Yıl": "3y", "5 Yıl": "5y", "Tümü": "max"}
 
 st.markdown("**📅 Zaman Aralığı:**")
 btn_cols = st.columns(len(period_map))

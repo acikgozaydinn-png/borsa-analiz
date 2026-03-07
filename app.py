@@ -52,7 +52,7 @@ st.markdown("#### 🏛️ Yatırım Noktası | Analiz Terminali")
 st.caption("Veriler Yahoo Finance üzerinden çekilmektedir. Yatırım tavsiyesi değildir.")
 
 # --- ÜST PANEL ---
-st.markdown("### 🔍 Hisseleri Kıyaslayın")
+st.markdown("**🔍 Hisseleri Kıyaslayın**")
 girdi = st.text_input(
     "Sembolleri virgül ile ayırın (Örn: AAPL, NVDA, TSLA, THYAO.IS):",
     "AAPL, NVDA"
@@ -61,7 +61,7 @@ sembol_listesi = [s.strip() for s in girdi.split(",") if s.strip()]
 
 period_map = {"1G": "1d", "1H": "5d", "1 Ay": "1mo", "1 Yıl": "1y", "3 Yıl": "3y", "5 Yıl": "5y", "Tümü": "max"}
 
-st.markdown("**📅 Zaman Aralığı:**")
+st.markdown("**📅 Dönem:**")
 btn_cols = st.columns(len(period_map))
 if "sure_secim" not in st.session_state:
     st.session_state.sure_secim = "1 Ay"
@@ -188,5 +188,3 @@ if sembol_listesi:
                         st.info("Haber yüklenemedi.")
     else:
         st.error("❌ Sembolleri kontrol edin; veri çekilemedi.")
-
-        

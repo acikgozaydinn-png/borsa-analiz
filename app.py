@@ -177,14 +177,15 @@ if sembol_listesi:
         for i, (s, veri) in enumerate(tum_paket.items()):
             news = veri['news']
             with haber_cols[i]:
-                st.markdown(f"**{s}**")
-                if news:
-                    for n in news[:5]:
-                        baslik = n.get('title', 'Başlık yok')
-                        link = n.get('link') or n.get('url', '#')
-                        st.markdown(f"🔗 [{tr_cevir(baslik)}]({link})")
-                        st.write("---")
-                else:
-                    st.info("Haber yüklenemedi.")
+                with st.expander(f"🗞️ {s} ({len(news[:5])} haber)"):
+                    if news:
+                        for n in news[:5]:
+                            baslik = n.get('title', 'Başlık yok')
+                            link = n.get('link') or n.get('url', '#')
+                            st.markdown(f"🔗 [{tr_cevir(baslik)}]({link})")
+                            st.write("---")
+                    else:
+                        st.info("Haber yüklenemedi.")
     else:
         st.error("❌ Sembolleri kontrol edin; veri çekilemedi.")
+                
